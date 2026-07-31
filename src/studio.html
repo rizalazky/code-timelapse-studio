@@ -128,7 +128,8 @@
 <script>
   const params = new URLSearchParams(location.search);
   const orientation = params.get('orientation') || 'horizontal';
-  if (orientation === 'vertical') {
+  const isVertical = orientation === 'vertical';
+  if (isVertical) {
     document.getElementById('stage').classList.add('vertical');
   }
 
@@ -150,9 +151,64 @@
   }
 
   /**
-   * Types `code` into the editor panel while mirroring the growing string
-   * into the live-preview iframe, so the preview updates in real time just
-   * like a real "share screen while coding" recording.
+   * Locates the inner-content character range [start, end) of the first
+   * <tagName>...</tagName> block in `code`. Returns null if absent.
+   */
+  function findBlock(code, tagName) {
+    const openRe = new RegExp('<' + tagName + '(\\s[^>]*)?>', 'i');
+    const openMatch = openRe.exec(code);
+    if (!openMatch) return null;
+    const start = openMatch.index + openMatch[0].length;
+    const end = code.toLowerCase().indexOf('</' + tagName + '>', start);
+    if (end === -1) return null;
+    return { start, end };
+  }
+
+  /**
+   * Splits `code` into:
+   *  - skeleton: the document with <style>/<script> INNER TEXT physically
+   *    removed (so e.g. "<style></style>" sit right next to each other —
+   *    no reserved blank space for content that hasn't been typed yet)
+   *  - blocks: [{ text, insertPoint }] sorted by where they belong in the
+   *    skeleton, so they can be spliced back in progressively later
+   */
+  function splitDoc(code) {
+    const styleBlock = findBlock(code, 'style');
+    const scriptBlock = findBlock(code, 'script');
+    const raw = [];
+    if (styleBlock) raw.push(styleBlock);
+    if (scriptBlock) raw.push(scriptBlock);
+    raw.sort((a, b) => a.start - b.start);
+
+    let skeleton = '';
+    let cursor = 0;
+    const blocks = [];
+    for (const b of raw) {
+      skeleton += code.slice(cursor, b.start);
+      blocks.push({ text: code.slice(b.start, b.end), insertPoint: skeleton.length });
+      cursor = b.end;
+    }
+    skeleton += code.slice(cursor);
+    return { skeleton, blocks };
+  }
+
+  /** Reassembles skeleton + partially-revealed block text at their insert points. */
+  function assemble(skeleton, blocks, revealedLens) {
+    let result = '';
+    let cursor = 0;
+    for (let i = 0; i < blocks.length; i++) {
+      result += skeleton.slice(cursor, blocks[i].insertPoint);
+      result += blocks[i].text.slice(0, revealedLens[i]);
+      cursor = blocks[i].insertPoint;
+    }
+    result += skeleton.slice(cursor);
+    return result;
+  }
+
+  /**
+   * Types `code` in HTML -> CSS -> JS order. Nothing is ever pre-reserved:
+   * the CSS/JS text simply doesn't exist in the displayed string until its
+   * own phase starts, so no empty gaps appear while earlier phases type.
    */
   window.typeCode = async function typeCode(code, opts) {
     opts = opts || {};
@@ -160,24 +216,55 @@
     const delayMs = opts.delayMs != null ? opts.delayMs : 12;
     const holdMs = opts.holdMs != null ? opts.holdMs : 1500;
     const previewEveryTicks = opts.previewEveryTicks || 1;
+    const reviewSeconds = isVertical ? 3 : 0;
 
-    let i = 0;
+    const { skeleton, blocks } = splitDoc(code);
+    const totalChars = skeleton.length + blocks.reduce((s, b) => s + b.text.length, 0);
+    const normalTicks = Math.ceil(totalChars / charsPerTick);
+    const reviewStartTick = reviewSeconds > 0
+      ? Math.max(0, normalTicks - Math.floor((reviewSeconds * 1000) / delayMs))
+      : normalTicks;
+
     let tick = 0;
-    while (i < code.length) {
-      i = Math.min(code.length, i + charsPerTick);
-      const partial = code.slice(0, i);
-      codeTextEl.innerHTML = highlight(partial);
-      codeWrap.scrollTop = codeWrap.scrollHeight;
+    let previewTickCounter = 0;
 
-      tick++;
-      if (tick % previewEveryTicks === 0 || i >= code.length) {
-        iframe.srcdoc = partial;
+    async function render(text, isFinalStep) {
+      codeTextEl.innerHTML = highlight(text);
+      codeWrap.scrollTop = codeWrap.scrollHeight;
+      previewTickCounter++;
+      if (previewTickCounter % previewEveryTicks === 0 || isFinalStep) {
+        iframe.srcdoc = text;
       }
-      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
+    async function typePhase(totalLen, buildText) {
+      let revealed = 0;
+      while (revealed < totalLen) {
+        const inReview = tick >= reviewStartTick && reviewSeconds > 0;
+        const rate = inReview ? 1 : charsPerTick;
+        const stepDelay = inReview ? Math.max(delayMs, 60) : delayMs;
+
+        revealed = Math.min(totalLen, revealed + rate);
+        tick++;
+        await render(buildText(revealed), false);
+        await new Promise((r) => setTimeout(r, stepDelay));
+      }
+    }
+
+    // Phase 1: HTML skeleton (structure only — style/script are still empty tags)
+    await typePhase(skeleton.length, (n) => skeleton.slice(0, n));
+
+    // Phase 2+: each block (CSS, then JS, in document order) fills into its slot
+    const revealedLens = blocks.map(() => 0);
+    for (let i = 0; i < blocks.length; i++) {
+      await typePhase(blocks[i].text.length, (n) => {
+        revealedLens[i] = n;
+        return assemble(skeleton, blocks, revealedLens);
+      });
     }
 
     // final full render + a short hold so the finished result is visible
-    iframe.srcdoc = code;
+    await render(code, true);
     await new Promise((r) => setTimeout(r, holdMs));
     window.__DONE__ = true;
     return true;
