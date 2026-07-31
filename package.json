@@ -1,0 +1,13 @@
+{
+  "name": "code-timelapse-studio",
+  "version": "1.0.0",
+  "description": "Turn a self-contained HTML/CSS/JS file into a code-typing + live-preview timelapse video, like the coding shorts you see on YouTube/TikTok.",
+  "main": "cli.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node cli.js"
+  },
+  "dependencies": {
+    "playwright": "^1.47.0"
+  }
+}

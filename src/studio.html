@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Code Timelapse Studio</title>
+<style>
+  :root {
+    --bg: #1e1e1e;
+    --panel: #1e1e1e;
+    --border: #2d2d2d;
+    --text: #d4d4d4;
+    --accent: #569cd6;
+  }
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    background: #000; overflow: hidden;
+    font-family: "SFMono-Regular", Menlo, Consolas, "Courier New", monospace;
+  }
+  #stage {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: row; /* default: horizontal, side by side */
+  }
+  #stage.vertical {
+    flex-direction: column; /* stacked: code on top, preview on bottom */
+  }
+
+  .panel {
+    position: relative;
+    flex: 1 1 50%;
+    min-width: 0; min-height: 0;
+    display: flex; flex-direction: column;
+    background: var(--panel);
+  }
+
+  .titlebar {
+    height: 34px;
+    flex: 0 0 auto;
+    background: #323233;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.red { background: #ff5f56; }
+  .dot.yellow { background: #ffbd2e; }
+  .dot.green { background: #27c93f; }
+  .titlebar span.label {
+    margin-left: 10px;
+    color: #9d9d9d;
+    font-size: 12px;
+  }
+
+  #code-wrap {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+  }
+  #code-content {
+    margin: 0;
+    padding: 16px 18px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--text);
+    height: 100%;
+    box-sizing: border-box;
+    overflow-y: hidden;
+  }
+  .cursor {
+    display: inline-block;
+    width: 8px; height: 1.1em;
+    background: var(--accent);
+    vertical-align: text-bottom;
+    animation: blink 0.9s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* very small keyword-ish highlighter, purely cosmetic */
+  .tok-tag { color: #569cd6; }
+  .tok-attr { color: #9cdcfe; }
+  .tok-str { color: #ce9178; }
+  .tok-comment { color: #6a9955; }
+
+  #preview-wrap {
+    flex: 1 1 auto;
+    background: #fff;
+    position: relative;
+  }
+  #preview {
+    width: 100%; height: 100%;
+    border: 0; display: block;
+    background: #fff;
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    
+    <div class="panel" id="preview-panel">
+      <div class="titlebar">
+        <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+        <span class="label">live preview</span>
+      </div>
+      <div id="preview-wrap">
+        <iframe id="preview" sandbox="allow-scripts"></iframe>
+      </div>
+    </div>
+    <div class="panel" id="code-panel">
+      <div class="titlebar">
+        <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+        <span class="label">index.html</span>
+      </div>
+      <div id="code-wrap">
+        <pre id="code-content"><span id="code-text"></span><span class="cursor"></span></pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const orientation = params.get('orientation') || 'horizontal';
+  if (orientation === 'vertical') {
+    document.getElementById('stage').classList.add('vertical');
+  }
+
+  const codeTextEl = document.getElementById('code-text');
+  const codeWrap = document.getElementById('code-wrap');
+  const iframe = document.getElementById('preview');
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Cosmetic-only syntax coloring. Not a real parser, just enough to look alive.
+  function highlight(s) {
+    let out = escapeHtml(s);
+    out = out.replace(/(&lt;!--[\s\S]*?--&gt;|\/\/[^\n]*)/g, '<span class="tok-comment">$1</span>');
+    out = out.replace(/(&lt;\/?[a-zA-Z0-9]+)/g, '<span class="tok-tag">$1</span>');
+    out = out.replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;)/g, '<span class="tok-str">$1</span>');
+    return out;
+  }
+
+  /**
+   * Types `code` into the editor panel while mirroring the growing string
+   * into the live-preview iframe, so the preview updates in real time just
+   * like a real "share screen while coding" recording.
+   */
+  window.typeCode = async function typeCode(code, opts) {
+    opts = opts || {};
+    const charsPerTick = opts.charsPerTick || 3;
+    const delayMs = opts.delayMs != null ? opts.delayMs : 12;
+    const holdMs = opts.holdMs != null ? opts.holdMs : 1500;
+    const previewEveryTicks = opts.previewEveryTicks || 1;
+
+    let i = 0;
+    let tick = 0;
+    while (i < code.length) {
+      i = Math.min(code.length, i + charsPerTick);
+      const partial = code.slice(0, i);
+      codeTextEl.innerHTML = highlight(partial);
+      codeWrap.scrollTop = codeWrap.scrollHeight;
+
+      tick++;
+      if (tick % previewEveryTicks === 0 || i >= code.length) {
+        iframe.srcdoc = partial;
+      }
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
+    // final full render + a short hold so the finished result is visible
+    iframe.srcdoc = code;
+    await new Promise((r) => setTimeout(r, holdMs));
+    window.__DONE__ = true;
+    return true;
+  };
+</script>
+</body>
+</html>
