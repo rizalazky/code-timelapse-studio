@@ -42,7 +42,7 @@ async function recordTimelapse({
   outDir,
   charsPerTick = 3,
   delayMs = 12,
-  holdMs = 1500,
+  holdMs = 3000,
   port = 5175,
 }) {
   const dims = ORIENTATIONS[orientation] || ORIENTATIONS.horizontal;

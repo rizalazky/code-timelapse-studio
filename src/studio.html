@@ -185,20 +185,50 @@
     const blocks = [];
     for (const b of raw) {
       skeleton += code.slice(cursor, b.start);
-      blocks.push({ text: code.slice(b.start, b.end), insertPoint: skeleton.length });
+      blocks.push(analyzeBlock({ text: code.slice(b.start, b.end), insertPoint: skeleton.length }));
       cursor = b.end;
     }
     skeleton += code.slice(cursor);
     return { skeleton, blocks };
   }
 
-  /** Reassembles skeleton + partially-revealed block text at their insert points. */
-  function assemble(skeleton, blocks, revealedLens) {
+  /**
+ * Analyzes a block's trailing whitespace (the indentation that sits right
+ * before its closing tag in the original code) so we can preview it early
+ * during typing instead of showing the closing tag jammed up against the
+ * last-typed character.
+ */
+  function analyzeBlock(block) {
+    const trailingMatch = block.text.match(/\n[ \t]*$/);
+    const trailingWhitespace = trailingMatch ? trailingMatch[0] : '';
+    return {
+      ...block,
+      contentEnd: block.text.length - trailingWhitespace.length,
+      indent: trailingWhitespace.slice(1), // strip leading \n, keep just the spaces/tabs
+    };
+  }
+
+  /** Reassembles skeleton + partially-revealed block text at their insert points.
+   *  `activeIndex` = index of the block currently being typed. While that
+   *  block's real content hasn't reached its own trailing indentation yet,
+   *  we preview a newline + matching indent before continuing into the
+   *  skeleton — so the closing tag lands where it will in the final code,
+   *  instead of sitting right behind the cursor.
+   */
+  function assemble(skeleton, blocks, revealedLens, activeIndex) {
     let result = '';
     let cursor = 0;
     for (let i = 0; i < blocks.length; i++) {
       result += skeleton.slice(cursor, blocks[i].insertPoint);
-      result += blocks[i].text.slice(0, revealedLens[i]);
+      const revealedText = blocks[i].text.slice(0, revealedLens[i]);
+      result += revealedText;
+
+      const stillTypingContent =
+        i === activeIndex && revealedLens[i] <= blocks[i].contentEnd && revealedLens[i] < blocks[i].text.length;
+      if (stillTypingContent) {
+        result += '\n' + blocks[i].indent;
+      }
+
       cursor = blocks[i].insertPoint;
     }
     result += skeleton.slice(cursor);
@@ -230,7 +260,7 @@
     let previewTickCounter = 0;
 
     async function render(text, isFinalStep) {
-      codeTextEl.innerHTML = highlight('text');
+      codeTextEl.innerHTML = highlight(text);
       codeWrap.scrollTop = codeWrap.scrollHeight;
       previewTickCounter++;
       if (previewTickCounter % previewEveryTicks === 0 || isFinalStep) {
@@ -260,7 +290,7 @@
     for (let i = 0; i < blocks.length; i++) {
       await typePhase(blocks[i].text.length, (n) => {
         revealedLens[i] = n;
-        return assemble(skeleton, blocks, revealedLens);
+        return assemble(skeleton, blocks, revealedLens, i); // <-- tambahkan `i` di sini
       });
     }
 
