@@ -278,6 +278,13 @@
       let revealed = 0;
       while (revealed < totalLen) {
         revealed = Math.min(totalLen, revealed + charsPerTick);
+        // Notify the Node/Playwright side of this keystroke tick so it can
+        // sync a mechanical-keyboard click sound to it during post-processing.
+        // (Playwright's video recorder captures video only, no audio, so
+        // timing has to be reported out and mixed in afterward.)
+        if (window.__onTypeTick) {
+          try { window.__onTypeTick(); } catch (e) { /* ignore */ }
+        }
         await render(buildText(revealed), false);
         await new Promise((r) => setTimeout(r, delayMs));
       }

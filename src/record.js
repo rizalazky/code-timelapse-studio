@@ -34,7 +34,10 @@ function serveStudio(dir, port) {
 
 /**
  * Records a typing + live-preview session for `code` and writes the raw
- * video into `outDir`. Returns the path to the recorded file.
+ * video into `outDir`. Returns the path to the recorded file, plus the list
+ * of millisecond offsets (relative to roughly when the recording started)
+ * at which each typing "tick" happened — used later to sync a keyboard
+ * click sound to the typing in postprocess.js.
  */
 async function recordTimelapse({
   code,
@@ -42,7 +45,7 @@ async function recordTimelapse({
   outDir,
   charsPerTick = 3,
   delayMs = 12,
-  holdMs = 3000,
+  holdMs = 1500,
   port = 5175,
 }) {
   const dims = ORIENTATIONS[orientation] || ORIENTATIONS.horizontal;
@@ -56,6 +59,16 @@ async function recordTimelapse({
     recordVideo: { dir: outDir, size: dims },
   });
   const page = await context.newPage();
+
+  // Recording effectively starts around page creation, so timestamp ticks
+  // relative to here. There's a small (~tens to low hundreds of ms) offset
+  // versus the true first video frame while the page loads and navigates,
+  // but that's fine for keystroke-click timing purposes.
+  const recordStart = Date.now();
+  const ticks = [];
+  await page.exposeFunction("__onTypeTick", () => {
+    ticks.push(Date.now() - recordStart);
+  });
 
   await page.goto(`http://localhost:${port}/studio.html?orientation=${orientation}`);
   await page.waitForFunction(() => typeof window.typeCode === "function");
@@ -75,7 +88,7 @@ async function recordTimelapse({
   // Give it a predictable name.
   const finalPath = path.join(outDir, `raw-${orientation}.webm`);
   fs.renameSync(videoPath, finalPath);
-  return finalPath;
+  return { videoPath: finalPath, ticks };
 }
 
 module.exports = { recordTimelapse, ORIENTATIONS };

@@ -18,6 +18,8 @@ function parseArgs(argv) {
     // pass --min-seconds-horizontal to enforce a floor there too.
     minSecondsVertical: 15,
     minSecondsHorizontal: 15,
+    typingSound: true,
+    typingSoundVolume: 0.5,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -31,6 +33,8 @@ function parseArgs(argv) {
     else if (a === "--out-dir") out.outDir = next();
     else if (a === "--min-seconds-vertical") out.minSecondsVertical = Number(next());
     else if (a === "--min-seconds-horizontal") out.minSecondsHorizontal = Number(next());
+    else if (a === "--no-typing-sound") out.typingSound = false;
+    else if (a === "--typing-sound-volume") out.typingSoundVolume = Number(next());
   }
   return out;
 }
@@ -53,7 +57,7 @@ async function main() {
 
   if (!opts.file) {
     console.error(
-      "Usage: node cli.js --file yourcode.html [--orientation vertical|horizontal|both] [--speed 4]"
+      "Usage: node cli.js --file yourcode.html [--orientation vertical|horizontal|both] [--speed 4] [--no-typing-sound] [--typing-sound-volume 0.5]"
     );
     process.exit(1);
   }
@@ -82,7 +86,7 @@ async function main() {
     }
 
     console.log(`[1/2] Recording (${orientation})...`);
-    const rawPath = await recordTimelapse({
+    const { videoPath: rawPath, ticks } = await recordTimelapse({
       code,
       orientation,
       outDir: opts.outDir,
@@ -91,12 +95,24 @@ async function main() {
       holdMs: opts.holdMs,
     });
 
-    console.log(`[2/2] Rendering timelapse (${orientation}, ${opts.speed}x)...`);
+    console.log(
+      `[2/2] Rendering timelapse (${orientation}, ${opts.speed}x${
+        opts.typingSound ? ", with keyboard sound" : ""
+      })...`
+    );
     const finalPath = path.join(
       opts.outDir,
       `timelapse-${path.basename(opts.file, path.extname(opts.file))}-${orientation}.mp4`
     );
-    makeTimelapse({ rawPath, outPath: finalPath, orientation, speed: opts.speed });
+    makeTimelapse({
+      rawPath,
+      outPath: finalPath,
+      orientation,
+      speed: opts.speed,
+      ticks,
+      typingSound: opts.typingSound,
+      typingSoundVolume: opts.typingSoundVolume,
+    });
     console.log(`✅ Done: ${finalPath}`);
   }
 }
