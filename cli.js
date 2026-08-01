@@ -8,16 +8,16 @@ function parseArgs(argv) {
   const out = {
     file: null,
     orientation: "both", // vertical | horizontal | both
-    speed: 4,
+    speed: 2,
     charsPerTick: 3,
     delayMs: 12,
-    holdMs: 1500,
+    holdMs: 3000,
     outDir: path.join(__dirname, "output"),
     // Vertical clips get a duration floor by default (short snippets were
     // ending up as ~2s clips). Horizontal stays at normal typing pace —
     // pass --min-seconds-horizontal to enforce a floor there too.
     minSecondsVertical: 15,
-    minSecondsHorizontal: 0,
+    minSecondsHorizontal: 15,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -94,7 +94,7 @@ async function main() {
     console.log(`[2/2] Rendering timelapse (${orientation}, ${opts.speed}x)...`);
     const finalPath = path.join(
       opts.outDir,
-      `timelapse-${orientation}-${path.basename(opts.file, path.extname(opts.file))}.mp4`
+      `timelapse-${path.basename(opts.file, path.extname(opts.file))}-${orientation}.mp4`
     );
     makeTimelapse({ rawPath, outPath: finalPath, orientation, speed: opts.speed });
     console.log(`✅ Done: ${finalPath}`);

@@ -219,6 +219,7 @@
     const reviewSeconds = isVertical ? 3 : 0;
 
     const { skeleton, blocks } = splitDoc(code);
+
     const totalChars = skeleton.length + blocks.reduce((s, b) => s + b.text.length, 0);
     const normalTicks = Math.ceil(totalChars / charsPerTick);
     const reviewStartTick = reviewSeconds > 0
@@ -229,7 +230,7 @@
     let previewTickCounter = 0;
 
     async function render(text, isFinalStep) {
-      codeTextEl.innerHTML = highlight(text);
+      codeTextEl.innerHTML = highlight('text');
       codeWrap.scrollTop = codeWrap.scrollHeight;
       previewTickCounter++;
       if (previewTickCounter % previewEveryTicks === 0 || isFinalStep) {
