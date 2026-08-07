@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Timelapse Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-6">
+
+    <div class="max-w-xl w-full bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+        <div class="mb-8 text-center">
+            <h1 class="text-2xl font-bold text-gray-800">Code Timelapse Studio</h1>
+            <p class="text-gray-500 text-sm mt-2">Upload file HTML dan atur konfigurasi sesuai parameter CLI</p>
+        </div>
+
+        <form id="timelapseForm" class="space-y-6">
+            <!-- Upload File -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">File Source (.html)</label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors bg-gray-50 cursor-pointer" onclick="document.getElementById('file-upload').click()">
+                    <div class="space-y-1 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="flex text-sm text-gray-600 justify-center">
+                            <label for="file-upload" class="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                <span>Pilih file HTML</span>
+                                <input id="file-upload" name="htmlFile" type="file" accept=".html" class="sr-only" required>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500" id="file-name">Belum ada file dipilih</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parameter Layout & Speed -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="orientation" class="block text-sm font-medium text-gray-700">Orientation</label>
+                    <select id="orientation" name="orientation" class="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="both">Both (Default)</option>
+                        <option value="vertical">Vertical</option>
+                        <option value="horizontal">Horizontal</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="speed" class="block text-sm font-medium text-gray-700">Speed (Multiplier)</label>
+                    <input type="number" id="speed" name="speed" value="4" min="1" step="0.5" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Parameter Suara (Audio) -->
+            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="flex items-center mb-4">
+                    <input id="noTypingSound" name="noTypingSound" type="checkbox" value="true" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="noTypingSound" class="ml-2 block text-sm font-medium text-gray-700">
+                        Disable Typing Sound (--no-typing-sound)
+                    </label>
+                </div>
+                
+                <div id="volumeControl">
+                    <label for="typingSoundVolume" class="block text-sm font-medium text-gray-700">
+                        Typing Sound Volume: <span id="volumeValue">0.5</span>
+                    </label>
+                    <input type="range" id="typingSoundVolume" name="typingSoundVolume" min="0" max="1" step="0.1" value="0.5" class="mt-2 w-full">
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" id="submitBtn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    Mulai Render Timelapse
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Update nama file saat dipilih
+        document.getElementById('file-upload').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            if (fileName) {
+                document.getElementById('file-name').textContent = fileName;
+                document.getElementById('file-name').classList.add('text-blue-600', 'font-semibold');
+            }
+        });
+
+        // Interaksi toggle volume slider
+        const noTypingSoundCheckbox = document.getElementById('noTypingSound');
+        const volumeControl = document.getElementById('volumeControl');
+        const volumeInput = document.getElementById('typingSoundVolume');
+        const volumeValue = document.getElementById('volumeValue');
+
+        noTypingSoundCheckbox.addEventListener('change', function(e) {
+            if(e.target.checked) {
+                volumeControl.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                volumeControl.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        });
+
+        volumeInput.addEventListener('input', function(e) {
+            volumeValue.textContent = e.target.value;
+        });
+
+        // Handle Submit API
+        document.getElementById('timelapseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerText;
+            
+            submitBtn.innerText = '⏳ Sedang merender... Silakan tunggu';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/api/generate-timelapse', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Berhasil! Cek terminal atau folder output Anda.');
+                } else {
+                    alert('Gagal: ' + result.error);
+                    console.log('error', error);
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan koneksi ke server.');
+                console.error(err);
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        });
+    </script>
+</body>
+</html>
