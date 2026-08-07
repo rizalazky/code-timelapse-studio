@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate dari Spreadsheet — Code Timelapse Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-6">
+    <div class="max-w-2xl mx-auto">
+        <div class="mb-6 text-center">
+            <h1 class="text-2xl font-bold text-gray-800">Generate dari Spreadsheet</h1>
+            <p class="text-gray-500 text-sm mt-2">Ambil baris berikutnya yang belum "done", generate videonya, lalu upload langsung ke YouTube/TikTok.</p>
+            <a href="/index.html" class="text-xs text-blue-600 hover:underline">← kembali ke upload manual</a>
+        </div>
+
+        <!-- STEP 1: baris berikutnya -->
+        <div id="step-next" class="bg-white rounded-xl shadow-lg p-6 border border-gray-200 mb-6">
+            <div id="next-loading" class="text-gray-500 text-sm">Memuat baris berikutnya...</div>
+            <div id="next-content" class="hidden">
+                <p class="text-xs uppercase tracking-wide text-gray-400 mb-1">Baris No <span id="row-no"></span></p>
+                <h2 id="row-name" class="text-lg font-semibold text-gray-800"></h2>
+                <p id="row-caption" class="text-gray-600 text-sm mt-1"></p>
+                <p id="row-tags" class="text-blue-600 text-xs mt-2"></p>
+
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Orientation</label>
+                        <select id="orientation" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                            <option value="vertical" selected>Vertical (Shorts/TikTok)</option>
+                            <option value="horizontal">Horizontal</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Speed</label>
+                        <input type="number" id="speed" value="4" min="1" step="0.5" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                    </div>
+                </div>
+
+                <button id="btn-generate" class="mt-5 w-full py-3 px-4 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    Generate Video
+                </button>
+            </div>
+            <div id="next-done" class="hidden text-center text-gray-600 text-sm py-4">
+                🎉 Semua baris di spreadsheet sudah "done".
+            </div>
+            <div id="next-error" class="hidden text-red-600 text-sm"></div>
+        </div>
+
+        <!-- STEP 2: hasil generate + upload -->
+        <div id="step-result" class="hidden bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">Video siap</h2>
+            <div id="video-players" class="space-y-4"></div>
+
+            <div class="mt-5 space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Judul</label>
+                    <input id="up-title" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Deskripsi / Caption</label>
+                    <textarea id="up-description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Tags</label>
+                    <input id="up-tags" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-5">
+                <button id="btn-youtube" class="py-3 px-4 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    Upload ke YouTube
+                </button>
+                <button id="btn-tiktok" class="py-3 px-4 rounded-md text-sm font-medium text-white bg-black hover:bg-gray-800">
+                    Upload ke TikTok
+                </button>
+            </div>
+
+            <div id="upload-status" class="mt-4 text-sm"></div>
+
+            <button id="btn-next" class="hidden mt-4 w-full py-3 px-4 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                Ambil baris berikutnya →
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentRow = null;      // { no, name, caption, tags }
+        let currentVideos = null;   // { vertical: "/output/...", horizontal: "/output/..." }
+        let chosenVideoUrl = null;  // which video file gets uploaded
+
+        async function loadNext() {
+            document.getElementById('step-result').classList.add('hidden');
+            document.getElementById('next-loading').classList.remove('hidden');
+            document.getElementById('next-content').classList.add('hidden');
+            document.getElementById('next-done').classList.add('hidden');
+            document.getElementById('next-error').classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/spreadsheet/next');
+                const data = await res.json();
+                document.getElementById('next-loading').classList.add('hidden');
+
+                if (!res.ok) throw new Error(data.error || 'Gagal memuat spreadsheet');
+
+                if (data.done) {
+                    document.getElementById('next-done').classList.remove('hidden');
+                    return;
+                }
+
+                currentRow = data;
+                document.getElementById('row-no').textContent = data.no;
+                document.getElementById('row-name').textContent = data.name;
+                document.getElementById('row-caption').textContent = data.caption;
+                document.getElementById('row-tags').textContent = data.tags;
+                document.getElementById('next-content').classList.remove('hidden');
+            } catch (err) {
+                document.getElementById('next-loading').classList.add('hidden');
+                document.getElementById('next-error').textContent = err.message;
+                document.getElementById('next-error').classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('btn-generate').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-generate');
+            const original = btn.textContent;
+            btn.textContent = '⏳ Merender... ini bisa beberapa menit';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/spreadsheet/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        no: currentRow.no,
+                        orientation: document.getElementById('orientation').value,
+                        speed: document.getElementById('speed').value,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Gagal generate video');
+
+                currentVideos = data.videos;
+                chosenVideoUrl = Object.values(data.videos)[0];
+
+                const playersEl = document.getElementById('video-players');
+                playersEl.innerHTML = '';
+                Object.entries(data.videos).forEach(([orientation, url]) => {
+                    const wrap = document.createElement('div');
+                    wrap.innerHTML = `
+                        <p class="text-xs text-gray-500 mb-1">${orientation}</p>
+                        <video src="${url}" controls class="w-full rounded-lg border border-gray-200 max-h-96"></video>
+                    `;
+                    const video = wrap.querySelector('video');
+                    video.addEventListener('play', () => { chosenVideoUrl = url; });
+                    playersEl.appendChild(wrap);
+                });
+
+                document.getElementById('up-title').value = currentRow.name || '';
+                document.getElementById('up-description').value = currentRow.caption || '';
+                document.getElementById('up-tags').value = currentRow.tags || '';
+                document.getElementById('upload-status').textContent = '';
+                document.getElementById('btn-next').classList.add('hidden');
+
+                document.getElementById('step-result').classList.remove('hidden');
+                document.getElementById('step-result').scrollIntoView({ behavior: 'smooth' });
+            } catch (err) {
+                alert('Gagal: ' + err.message);
+            } finally {
+                btn.textContent = original;
+                btn.disabled = false;
+            }
+        });
+
+        async function doUpload(platform) {
+            const statusEl = document.getElementById('upload-status');
+            statusEl.textContent = `⏳ Mengupload ke ${platform}...`;
+            statusEl.className = 'mt-4 text-sm text-gray-600';
+
+            try {
+                const res = await fetch('/api/spreadsheet/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        no: currentRow.no,
+                        platform,
+                        videoUrl: chosenVideoUrl,
+                        title: document.getElementById('up-title').value,
+                        description: document.getElementById('up-description').value,
+                        tags: document.getElementById('up-tags').value,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || `Gagal upload ke ${platform}`);
+
+                const link = data.result.url ? `<a href="${data.result.url}" target="_blank" class="underline">${data.result.url}</a>` : '';
+                statusEl.innerHTML = `✅ Berhasil diupload ke ${platform}. Baris No ${currentRow.no} ditandai "done". ${link}`;
+                statusEl.className = 'mt-4 text-sm text-green-700';
+                document.getElementById('btn-next').classList.remove('hidden');
+            } catch (err) {
+                statusEl.textContent = '❌ ' + err.message;
+                statusEl.className = 'mt-4 text-sm text-red-600';
+            }
+        }
+
+        document.getElementById('btn-youtube').addEventListener('click', () => doUpload('youtube'));
+        document.getElementById('btn-tiktok').addEventListener('click', () => doUpload('tiktok'));
+        document.getElementById('btn-next').addEventListener('click', loadNext);
+
+        loadNext();
+    </script>
+</body>
+</html>

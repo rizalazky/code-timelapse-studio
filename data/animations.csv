@@ -1,0 +1,31 @@
+No,Nama Animasi,Caption,Tags,"Kode HTML (full, siap dipakai)",STATUS
+1,Floating Bubbles - Sunset,Gelembung mengambang lembut ke atas (tema warna Sunset),#bubble #calm #loop #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Floating Bubbles - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.b{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#ff5e62,#ff9966);position:absolute;left:50%;animation:up 4s infinite ease-in-out}@keyframes up{0%{bottom:-60px;opacity:0}50%{opacity:1}100%{bottom:110%;opacity:0}}
+</style>
+</head>
+<body>
+<div class=""b""></div>
+
+</body>
+</html>",done
+2,Floating Bubbles - Ocean,Gelembung mengambang lembut ke atas (tema warna Ocean),#bubble #calm #loop #ocean,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Floating Bubbles - Ocean</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.b{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#00c6ff,#0072ff);position:absolute;left:50%;animation:up 4s infinite ease-in-out}@keyframes up{0%{bottom:-60px;opacity:0}50%{opacity:1}100%{bottom:110%;opacity:0}}
+</style>
+</head>
+<body>
+<div class=""b""></div>
+
+</body>
+</html>",
