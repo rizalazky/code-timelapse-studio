@@ -89,7 +89,33 @@ app.post('/api/generate-timelapse', upload.single('htmlFile'), (req, res) => {
 // =====================================================================
 // FLOW BARU: generate dari spreadsheet + upload ke YouTube/TikTok
 // =====================================================================
+app.get('/api/spreadsheet', (req, res) => {
+  try {
+    if (!fs.existsSync(SPREADSHEET_PATH)) {
+      return res.status(404).json({ error: `Spreadsheet tidak ditemukan di ${SPREADSHEET_PATH}` });
+    }
+    const { records } = readSheet(SPREADSHEET_PATH);
+    res.json({ records });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+app.get('/api/spreadsheet/:no', (req, res) => {
+  try {
+    if (!fs.existsSync(SPREADSHEET_PATH)) {
+      return res.status(404).json({ error: `Spreadsheet tidak ditemukan di ${SPREADSHEET_PATH}` });
+    }
+    const { records } = readSheet(SPREADSHEET_PATH);
+    const record = records.find((r) => String(r.No) === String(req.params.no));
+    if (!record) {
+      return res.status(404).json({ error: `Baris No=${req.params.no} tidak ditemukan` });
+    }
+    res.json({ record });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // Baris berikutnya yang STATUS-nya belum "done" (kosong dihitung belum
 // selesai juga). Tidak mengirim kolom kode HTML — cukup buat preview.
 app.get('/api/spreadsheet/next', (req, res) => {

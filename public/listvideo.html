@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Antrean Video</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; background-color: #f8f9fa; }
+        .table-wrapper { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .badge-true { background-color: #198754; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8em; }
+        .badge-false { background-color: #dc3545; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8em; }
+        .badge-status { background-color: #0d6efd; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8em; }
+        .code-snippet { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; cursor: help; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">🎬 Dashboard Antrean Konten</h2>
+        <button class="btn btn-primary" onclick="loadData()">🔄 Refresh Data</button>
+    </div>
+
+    <div class="table-wrapper table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Nama Animasi</th>
+                    <th>Caption</th>
+                    <th>Tags</th>
+                    <th>Generated</th>
+                    <th>YouTube</th>
+                    <th>TikTok</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr>
+                    <td colspan="8" class="text-center py-4">Memuat data...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function loadData() {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">Memuat data...</td></tr>';
+
+        try {
+            const response = await fetch('/api/spreadsheet');
+            const data = await response.json();
+            console.log('Data fetched:', data);
+
+            if (data.error) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">${data.error}</td></tr>`;
+                return;
+            }
+
+            if (data.records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data di CSV.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            data.records.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                // Helper function untuk render badge
+                const renderUploadBadge = (val) => {
+                    const isUploaded = val && val.toUpperCase() === 'TRUE';
+                    return `<span class="${isUploaded ? 'badge-true' : 'badge-false'}">${isUploaded ? 'UPLOADED' : 'PENDING'}</span>`;
+                };
+
+                tr.innerHTML = `
+                    <td><strong>#${row['No']}</strong></td>
+                    <td>${row['Nama Animasi']}</td>
+                    <td><small>${row['Caption']}</small></td>
+                    <td><small class="text-muted">${row['Tags']}</small></td>
+                    <td><span class="badge-status">${row['STATUS']}</span></td>
+                    <td>${renderUploadBadge(row['uploaded_youtube'])}</td>
+                    <td>${renderUploadBadge(row['uploaded_tiktok'])}</td>
+                    <td><a href="spreadsheet.html?no=${row['No']}" target="_blank" class="btn btn-sm btn-outline-primary">View</a></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Gagal menghubungi server.</td></tr>`;
+        }
+    }
+
+    // Load data otomatis saat halaman pertama kali dibuka
+    window.onload = loadData;
+</script>
+
+</body>
+</html>
