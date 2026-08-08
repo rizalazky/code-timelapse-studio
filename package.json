@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node cli.js",
     "server": "node server.js",
-    "youtube:auth": "node scripts/get-youtube-refresh-token.js"
+    "youtube:auth": "node scripts/get-youtube-refresh-token.js",
+    "tiktok:auth": "node scripts/get-tiktok-token.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
