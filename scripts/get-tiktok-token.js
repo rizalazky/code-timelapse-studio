@@ -13,7 +13,8 @@ if (!CLIENT_KEY || !CLIENT_SECRET) {
   process.exit(1);
 }
 
-const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${CLIENT_KEY}&scope=user.info.basic,video.publish&response_type=code&redirect_uri=${encodeURIComponent(
+// Ubah bagian ini:
+const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${CLIENT_KEY}&scope=user.info.basic,video.publish,video.upload&response_type=code&redirect_uri=${encodeURIComponent(
   REDIRECT_URI
 )}&state=code_timelapse_studio`;
 

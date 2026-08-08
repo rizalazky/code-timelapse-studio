@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 const { spawnSync } = require("child_process");
 
 const TIKTOK_API = "https://open.tiktokapis.com/v2";
@@ -19,26 +20,11 @@ async function tiktokFetch(pathName, accessToken, body) {
   return json;
 }
 
-/**
- * Fetches the authorized creator's current posting constraints. Per
- * TikTok's Direct Post docs / Content Sharing Guidelines this must be
- * queried before every post — the available privacy levels and
- * duet/comment/stitch settings are per-creator (and can change), so a
- * hardcoded assumption can silently conflict with the account's real
- * state.
- */
 async function getCreatorInfo(accessToken) {
   const res = await tiktokFetch("/post/publish/creator_info/query/", accessToken, {});
   return res.data;
 }
 
-/**
- * Best-effort video duration check via ffprobe, run against the
- * creator's max_video_post_duration_sec so an over-limit video fails
- * fast instead of only after a full upload + publish attempt. Never
- * blocks the upload if ffprobe itself is unavailable/fails — this is a
- * fast-fail convenience, not a hard validation layer.
- */
 function checkDuration(filePath, maxDurationSec) {
   if (!maxDurationSec) return;
   const probe = spawnSync("ffprobe", [
@@ -47,7 +33,7 @@ function checkDuration(filePath, maxDurationSec) {
     "-of", "default=noprint_wrappers=1:nokey=1",
     filePath,
   ]);
-  if (probe.status !== 0) return; // ffprobe missing/failed — skip, not fatal
+  if (probe.status !== 0) return;
   const durationSec = parseFloat(probe.stdout.toString().trim());
   if (!Number.isFinite(durationSec)) return;
   if (durationSec > maxDurationSec) {
@@ -59,98 +45,112 @@ function checkDuration(filePath, maxDurationSec) {
 }
 
 const refreshToken = async () => {
+  const { TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_REFRESH_TOKEN } = process.env;
+
   try {
-        const refreshRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            client_key: TIKTOK_CLIENT_KEY,
-            client_secret: TIKTOK_CLIENT_SECRET,
-            grant_type: "refresh_token",
-            refresh_token: TIKTOK_REFRESH_TOKEN,
-          }),
-        });
-        const data = await refreshRes.json();
-        if (data.access_token) {
-          console.log("✅ TikTok access token berhasil diperbarui.");
-          console.log("TIKTOK_ACCESS_TOKEN=", data.access_token);
-          console.log("TIKTOK_REFRESH_TOKEN=", data.refresh_token);
-          return data.access_token;
-        } else {
-          console.error("❌ Gagal memperbarui TikTok access token:", data);
-        }
-      } catch (err) {
-        console.error("❌ Gagal memperbarui TikTok access token:", err);
+    const refreshRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_key: TIKTOK_CLIENT_KEY,
+        client_secret: TIKTOK_CLIENT_SECRET,
+        grant_type: "refresh_token",
+        refresh_token: TIKTOK_REFRESH_TOKEN,
+      }),
+    });
+    
+    const data = await refreshRes.json();
+    const tokenData = data.data || data;
+
+    if (tokenData.access_token) {
+      console.log("✅ TikTok access token berhasil diperbarui.");
+      
+      // Update di memori
+      process.env.TIKTOK_ACCESS_TOKEN = tokenData.access_token;
+      process.env.TIKTOK_REFRESH_TOKEN = tokenData.refresh_token;
+
+      // Update permanen di file .env
+      const envPath = path.join(__dirname, "..", ".env");
+      if (fs.existsSync(envPath)) {
+          let envFile = fs.readFileSync(envPath, "utf-8");
+          envFile = envFile.replace(/TIKTOK_ACCESS_TOKEN=.*/, `TIKTOK_ACCESS_TOKEN=${tokenData.access_token}`);
+          envFile = envFile.replace(/TIKTOK_REFRESH_TOKEN=.*/, `TIKTOK_REFRESH_TOKEN=${tokenData.refresh_token}`);
+          fs.writeFileSync(envPath, envFile);
       }
-      return null;
+
+      return tokenData.access_token;
+    } else {
+      console.error("❌ Gagal memperbarui TikTok access token:", data);
+    }
+  } catch (err) {
+    console.error("❌ Gagal memperbarui TikTok access token:", err);
+  }
+  return null;
 }
 
 /**
- * Direct-posts a local video to TikTok via the Content Posting API
- * (source: FILE_UPLOAD). Requires TIKTOK_ACCESS_TOKEN with the
- * video.publish scope for the target creator — see SETUP-UPLOAD.md.
- *
- * Note: until your TikTok developer app passes audit, every post lands as
- * private ("SELF_ONLY") no matter what privacyLevel you request — that's a
- * TikTok platform restriction, not a bug here.
+ * Logika inti untuk upload (mendukung mode DIRECT dan INBOX)
  */
-async function uploadToTikTok({ filePath, caption = "", privacyLevel = "SELF_ONLY" }) {
-  let { TIKTOK_ACCESS_TOKEN, TIKTOK_REFRESH_TOKEN } = process.env;
-
-  if (!TIKTOK_ACCESS_TOKEN && !TIKTOK_REFRESH_TOKEN) {
-    throw new Error("Token kosong bro. Lo wajib login via browser (jalankan script auth) minimal sekali!");
-  }
-
+async function executeUpload(filePath, caption, privacyLevel, accessToken, mode) {
   const videoSize = fs.statSync(filePath).size;
+  const isInbox = mode === "INBOX";
 
-  // const getAccessTokenFromreq = await getAccessToken();
-  // Required before every Direct Post: pull the creator's *current*
-  // constraints rather than trusting our own defaults.
-  const creator = await getCreatorInfo(TIKTOK_ACCESS_TOKEN);
-  console.log(`[tiktok] Creator info: ${JSON.stringify(creator)}`);
+  let effectivePrivacyLevel = privacyLevel;
+  let creator = null;
 
-  checkDuration(filePath, creator.max_video_post_duration_sec);
+  // Jika DIRECT post, kita butuh cek creator info dan durasi
+  if (!isInbox) {
+      creator = await getCreatorInfo(accessToken);
+      console.log(`[tiktok] Creator info: ${JSON.stringify(creator)}`);
+      
+      checkDuration(filePath, creator.max_video_post_duration_sec);
 
-  // Only use privacyLevel if it's actually one of this creator's real
-  // options right now; otherwise fall back to the safest available one.
-  const availableLevels = creator.privacy_level_options || ["SELF_ONLY"];
-  const effectivePrivacyLevel = availableLevels.includes(privacyLevel)
-    ? privacyLevel
-    : availableLevels.includes("SELF_ONLY")
-    ? "SELF_ONLY"
-    : availableLevels[0];
-  if (effectivePrivacyLevel !== privacyLevel) {
-    console.warn(
-      `[tiktok] privacyLevel "${privacyLevel}" tidak ada di opsi creator ini ` +
-        `(tersedia: ${availableLevels.join(", ")}) — pakai "${effectivePrivacyLevel}".`
-    );
+      const availableLevels = creator.privacy_level_options || ["SELF_ONLY"];
+      effectivePrivacyLevel = availableLevels.includes(privacyLevel)
+        ? privacyLevel
+        : availableLevels.includes("SELF_ONLY")
+        ? "SELF_ONLY"
+        : availableLevels[0];
+
+      if (effectivePrivacyLevel !== privacyLevel) {
+        console.warn(
+          `[tiktok] privacyLevel "${privacyLevel}" tidak ada di opsi creator ini ` +
+            `(tersedia: ${availableLevels.join(", ")}) — pakai "${effectivePrivacyLevel}".`
+        );
+      }
   }
 
-  console.log(`[tiktok] Uploading ${filePath} (${videoSize} bytes) with caption "${caption}" and privacy level "${effectivePrivacyLevel}"...`);
+  console.log(`[tiktok] Mengunggah ${filePath} (${videoSize} bytes) menggunakan mode ${mode}...`);
 
-  const init = await tiktokFetch("/post/publish/video/init/", TIKTOK_ACCESS_TOKEN, {
-    post_info: {
-      title: caption,
-      // privacy_level: effectivePrivacyLevel,
-      privacy_level: "SELF_ONLY", // until audit passes, TikTok ignores this and forces SELF_ONLY
-      // Mirror what the creator already has disabled account-side instead
-      // of hardcoding false — sending disable_duet:false etc. when TikTok
-      // already disabled it for this creator is exactly the mismatch
-      // creator_info exists to prevent.
-      // disable_duet: !!creator.duet_disabled,
-      // disable_comment: !!creator.comment_disabled,
-      // disable_stitch: !!creator.stitch_disabled,
-    },
+  // 1. Tentukan Endpoint & Payload berdasarkan mode
+  const endpoint = isInbox 
+    ? "/post/publish/inbox/video/init/" 
+    : "/post/publish/video/init/";
+
+  const requestBody = {
     source_info: {
       source: "FILE_UPLOAD",
       video_size: videoSize,
-      chunk_size: videoSize, // whole file in one chunk; fine for short timelapse clips
+      chunk_size: videoSize,
       total_chunk_count: 1,
     },
-  });
+  };
 
+  // post_info HANYA dikirim jika mode DIRECT
+  if (!isInbox) {
+    requestBody.post_info = {
+      title: caption,
+      privacy_level: "SELF_ONLY", // Set SELF_ONLY sampai lolos audit
+      disable_duet: true, 
+      disable_comment: true,
+      disable_stitch: true,
+    };
+  }
+
+  const init = await tiktokFetch(endpoint, accessToken, requestBody);
   const { publish_id, upload_url } = init.data;
 
+  // 2. Upload file (PUT)
   const putRes = await fetch(upload_url, {
     method: "PUT",
     headers: {
@@ -159,16 +159,17 @@ async function uploadToTikTok({ filePath, caption = "", privacyLevel = "SELF_ONL
     },
     body: fs.readFileSync(filePath),
   });
+  
   if (!putRes.ok) {
     throw new Error(`Gagal upload byte video ke TikTok (status ${putRes.status})`);
   }
 
-  // Publishing is async — poll status/fetch until it's out of the
-  // PROCESSING states so the caller knows whether it actually landed.
+  // 3. Polling Status
+  console.log("[tiktok] Memproses video di server TikTok...");
   let status = "PROCESSING_UPLOAD";
   for (let attempt = 0; attempt < 15 && status.includes("PROCESSING"); attempt++) {
     await new Promise((r) => setTimeout(r, 2000));
-    const check = await tiktokFetch("/post/publish/status/fetch/", TIKTOK_ACCESS_TOKEN, { publish_id });
+    const check = await tiktokFetch("/post/publish/status/fetch/", accessToken, { publish_id });
     status = check.data.status;
     if (status === "FAILED") {
       throw new Error(`TikTok publish gagal: ${check.data.fail_reason || "unknown"}`);
@@ -178,9 +179,39 @@ async function uploadToTikTok({ filePath, caption = "", privacyLevel = "SELF_ONL
   return {
     publishId: publish_id,
     status,
-    creatorUsername: creator.creator_username,
-    privacyLevel: effectivePrivacyLevel,
+    mode,
+    creatorUsername: creator ? creator.creator_username : "TBA (Inbox Mode)",
+    privacyLevel: isInbox ? "SET_VIA_APP" : effectivePrivacyLevel,
   };
+}
+
+/**
+ * Fungsi utama (Wrapper dengan logika auto-refresh dan pilihan mode)
+ */
+async function uploadToTikTok({ filePath, caption = "", privacyLevel = "SELF_ONLY", mode = "INBOX" }) {
+  let { TIKTOK_ACCESS_TOKEN, TIKTOK_REFRESH_TOKEN } = process.env;
+
+  if (!TIKTOK_ACCESS_TOKEN && !TIKTOK_REFRESH_TOKEN) {
+    throw new Error("Token kosong bro. Lo wajib login via browser (jalankan script auth) minimal sekali!");
+  }
+
+  try {
+    return await executeUpload(filePath, caption, privacyLevel, TIKTOK_ACCESS_TOKEN, mode);
+  } catch (error) {
+    const errorString = error.message.toLowerCase();
+    const isAuthError = errorString.includes("unauthorized") || errorString.includes("token") || errorString.includes("access_token");
+
+    if (isAuthError) {
+      console.log("[tiktok] Token expired. Mencoba refresh token...");
+      const newAccessToken = await refreshToken();
+      if (!newAccessToken) {
+          throw new Error("Refresh token gagal, silakan login ulang via browser.");
+      }
+      return await executeUpload(filePath, caption, privacyLevel, newAccessToken, mode);
+    } else {
+      throw new Error(`Error: ${error.message}`);
+    }
+  }
 }
 
 module.exports = { uploadToTikTok, getCreatorInfo };
