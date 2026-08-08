@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { recordTimelapse } = require("./record");
 const { makeTimelapse } = require("./postprocess");
+const { prettifyCode } = require("./prettify");
 
 /**
  * Same recordTimelapse -> makeTimelapse pipeline cli.js drives, but callable
@@ -24,9 +25,20 @@ async function generateFromCode({
   minSecondsHorizontal = 0,
   typingSound = true,
   typingSoundVolume = 0.5,
+  prettify = true, // re-indent minified/single-line source before typing it
 }) {
   if (!code || !code.trim()) {
-    throw new Error("Kode HTML kosong — tidak ada yang bisa direkam");
+    throw new Error("HTML code is empty — nothing to record");
+  }
+
+  if (prettify) {
+    try {
+      code = prettifyCode(code);
+    } catch (e) {
+      // If the beautifier chokes on malformed markup, fall back to the
+      // original code rather than failing the whole generation.
+      console.warn("prettify failed, using original code:", e.message);
+    }
   }
 
   const orientations = orientation === "both" ? ["vertical", "horizontal"] : [orientation];

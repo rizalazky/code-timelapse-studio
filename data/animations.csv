@@ -1,5 +1,5 @@
 No,Nama Animasi,Caption,Tags,"Kode HTML (full, siap dipakai)",STATUS
-1,Floating Bubbles - Sunset,Gelembung mengambang lembut ke atas (tema warna Sunset),#bubble #calm #loop #sunset,"<!DOCTYPE html>
+1,Floating Bubbles - Sunset,Gentle floating bubbles rising smoothly with CSS keyframe animation (Sunset color scheme).,#floatingbubbles #sunset #cssanimation #webdesign #frontend #htmlcss #uiux #purecss,"<!DOCTYPE html>
 <html lang=""id"">
 <head>
 <meta charset=""UTF-8"">
@@ -14,18 +14,438 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#
 
 </body>
 </html>",done
-2,Floating Bubbles - Ocean,Gelembung mengambang lembut ke atas (tema warna Ocean),#bubble #calm #loop #ocean,"<!DOCTYPE html>
+11,Pulsing Circle - Sunset,Rhythmic pulsing circle animation created with pure CSS scale transitions (Sunset color scheme).,#pulsingcircle #sunset #cssanimation #webdesign #frontend #htmlcss #uiux #purecss,"<!DOCTYPE html>
 <html lang=""id"">
 <head>
 <meta charset=""UTF-8"">
-<title>Floating Bubbles - Ocean</title>
+<title>Pulsing Circle - Sunset</title>
 <style>
 html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
-.b{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#00c6ff,#0072ff);position:absolute;left:50%;animation:up 4s infinite ease-in-out}@keyframes up{0%{bottom:-60px;opacity:0}50%{opacity:1}100%{bottom:110%;opacity:0}}
+.c{width:100px;height:100px;border-radius:50%;background:#ff5e62;margin:auto;position:relative;top:40vh;animation:p 2s infinite}@keyframes p{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.5}}
 </style>
 </head>
 <body>
-<div class=""b""></div>
+<div class=""c""></div>
 
 </body>
-</html>",
+</html>",pending
+21,Gradient Wave BG - Sunset,Smooth animated background gradient wave for modern website design (Sunset color scheme).,#gradientwavebg #sunset #cssanimation #webdesign #frontend #htmlcss #uiux #purecss,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Gradient Wave BG - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.g{width:100%;height:100vh;background:linear-gradient(270deg,#ff5e62,#ff9966,#ffce54);background-size:600% 600%;animation:gw 8s ease infinite}@keyframes gw{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+</style>
+</head>
+<body>
+<div class=""g""></div>
+
+</body>
+</html>",pending
+31,Rotating Cube 3D - Sunset,Interactive 3D rotating cube animation built with CSS 3D transforms (Sunset color scheme).,#rotatingcube3d #sunset #cssanimation #webdesign #frontend #htmlcss #uiux #purecss,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Rotating Cube 3D - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.cube{perspective:600px;height:100vh;display:flex}.cube div{width:100px;height:100px;background:#ff5e62;margin:auto;animation:r 4s linear infinite}@keyframes r{0%{transform:rotateX(0) rotateY(0)}100%{transform:rotateX(360deg) rotateY(360deg)}}
+</style>
+</head>
+<body>
+<div class=""cube""><div></div></div>
+
+</body>
+</html>",pending
+41,Starfield Drift - Sunset,Animated starfield drift simulating movement through space with HTML5 Canvas (Sunset color scheme).,#starfield #space #canvas #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Starfield Drift - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id=""s""></canvas>
+<script>let c=document.getElementById('s'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;let st=[...Array(150)].map(()=>({x:Math.random()*c.width,y:Math.random()*c.height,z:Math.random()*c.width}));function a(){x.fillStyle='rgba(0,0,0,0.3)';x.fillRect(0,0,c.width,c.height);st.forEach(s=>{s.z-=4;if(s.z<=0)s.z=c.width;let k=128/s.z,px=(s.x-c.width/2)*k+c.width/2,py=(s.y-c.height/2)*k+c.height/2;x.fillStyle='#ff5e62';x.fillRect(px,py,2,2)});requestAnimationFrame(a)}a()</script>
+</body>
+</html>",pending
+51,Blob Morph - Sunset,Smooth morphing organic blob animation built with CSS keyframe animations (Sunset color scheme).,#blob #morph #organic #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Blob Morph - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.m{width:200px;height:200px;background:#ff5e62;margin:auto;position:relative;top:30vh;animation:mo 6s ease-in-out infinite}@keyframes mo{0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%}}
+</style>
+</head>
+<body>
+<div class=""m""></div>
+
+</body>
+</html>",pending
+61,Aurora Gradient - Sunset,Smooth ambient aurora gradient background animation with CSS keyframe animations (Sunset color scheme).,#aurora #northernlights #ambient #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Aurora Gradient - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.au{width:100%;height:100vh;background:linear-gradient(120deg,#ff5e62,#ff9966,#ffce54);background-size:400% 400%;filter:blur(20px);animation:auf 10s ease infinite}@keyframes auf{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+</style>
+</head>
+<body>
+<div class=""au""></div>
+
+</body>
+</html>",pending
+71,Bouncing Ball - Sunset,Playful bouncing ball animation with realistic physics using CSS keyframe animations (Sunset color scheme).,#bounce #physics #playful #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Bouncing Ball - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.ball{width:50px;height:50px;border-radius:50%;background:#ff5e62;margin:auto;position:relative;top:20vh;animation:bo 1s infinite cubic-bezier(.5,0,.5,1)}@keyframes bo{0%{transform:translateY(0)}50%{transform:translateY(-150px)}100%{transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class=""ball""></div>
+
+</body>
+</html>",pending
+81,Ripple Rings - Sunset,Expanding ripple rings animation created with pure CSS scale transitions (Sunset color scheme).,#ripple #radar #wave #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Ripple Rings - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.rp{width:20px;height:20px;border:4px solid #ff5e62;border-radius:50%;margin:auto;position:relative;top:40vh;animation:ri 2s infinite}@keyframes ri{0%{transform:scale(1);opacity:1}100%{transform:scale(10);opacity:0}}
+</style>
+</head>
+<body>
+<div class=""rp""></div>
+
+</body>
+</html>",pending
+91,Matrix Rain - Sunset,Animated matrix rain effect simulating falling digital code with HTML5 Canvas (Sunset color scheme).,#matrix #digitalrain #tech #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Matrix Rain - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id=""mx""></canvas>
+<script>let c=document.getElementById('mx'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;let cols=Math.floor(c.width/14),drops=Array(cols).fill(0);function d(){x.fillStyle='rgba(0,0,0,.05)';x.fillRect(0,0,c.width,c.height);x.fillStyle='#ff5e62';drops.forEach((y,i)=>{x.fillText(String.fromCharCode(33+Math.random()*94),i*14,y*14);if(y*14>c.height&&Math.random()>.975)drops[i]=0;drops[i]++})}setInterval(d,50)</script>
+</body>
+</html>",pending
+101,Spinning Torus - Sunset,3D spinning torus animation rotating smoothly with CSS 3D transforms (Sunset color scheme).,#torus #ring #3d #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Spinning Torus - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.t{perspective:500px;height:100vh;display:flex}.t div{width:120px;height:120px;border:20px solid #ff5e62;border-radius:50%;margin:auto;animation:tr 3s linear infinite}@keyframes tr{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+</style>
+</head>
+<body>
+<div class=""t""><div></div></div>
+
+</body>
+</html>",pending
+111,Fire Flicker - Sunset,Dynamic flickering fire flame animation created with CSS keyframe animations (Sunset color scheme).,#fire #flame #flicker #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Fire Flicker - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.fi{width:80px;height:120px;background:radial-gradient(ellipse at bottom,#ff5e62,#ff9966,transparent);margin:auto;position:relative;top:35vh;animation:fl .3s infinite alternate}@keyframes fl{0%{transform:scaleY(1) scaleX(1)}100%{transform:scaleY(1.1) scaleX(.95)}}
+</style>
+</head>
+<body>
+<div class=""fi""></div>
+
+</body>
+</html>",pending
+121,Smoke Rise - Sunset,Smooth rising smoke drift animation created with CSS keyframe animations (Sunset color scheme).,#smoke #haze #drift #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Smoke Rise - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.sm{width:40px;height:40px;border-radius:50%;background:#ff5e62;opacity:.5;filter:blur(10px);position:absolute;left:50%;animation:sr 5s infinite}@keyframes sr{0%{bottom:0;opacity:.8;transform:scale(1)}100%{bottom:100%;opacity:0;transform:scale(3)}}
+</style>
+</head>
+<body>
+<div class=""sm""></div>
+
+</body>
+</html>",pending
+131,Neon Glow Pulse - Sunset,Dynamic pulsing neon glow text animation created with CSS keyframe animations (Sunset color scheme).,#neon #glow #retro #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Neon Glow Pulse - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.ng{color:#fff;font-size:40px;text-align:center;position:relative;top:45vh;text-shadow:0 0 10px #ff5e62,0 0 20px #ff5e62,0 0 40px #ff9966;animation:ngp 1.5s infinite}@keyframes ngp{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<div class=""ng"">GLOW</div>
+
+</body>
+</html>",pending
+141,Kaleidoscope Spin - Sunset,Vibrant rotating kaleidoscope pattern animation built with CSS conic gradients (Sunset color scheme).,#kaleidoscope #pattern #colorful #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Kaleidoscope Spin - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.ka{width:150px;height:150px;background:conic-gradient(from 0deg,#ff5e62,#ff9966,#ffce54,#ff5e62);border-radius:50%;margin:auto;position:relative;top:30vh;animation:ks 5s linear infinite}@keyframes ks{100%{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class=""ka""></div>
+
+</body>
+</html>",pending
+151,Snow Falling - Sunset,Animated snow falling effect simulating winter weather with HTML5 Canvas (Sunset color scheme).,#snow #winter #canvas #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Snow Falling - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id=""sn""></canvas>
+<script>let c=document.getElementById('sn'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;let fl=[...Array(100)].map(()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*3+1}));function f(){x.clearRect(0,0,c.width,c.height);x.fillStyle='#ff5e62';fl.forEach(p=>{p.y+=1;if(p.y>c.height)p.y=0;x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()});requestAnimationFrame(f)}f()</script>
+</body>
+</html>",pending
+161,Heartbeat Line - Sunset,Rhythmic heartbeat line animation simulating an EKG pulse with CSS keyframe animations (Sunset color scheme).,#heartbeat #ekg #medical #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Heartbeat Line - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.hb{width:200px;height:4px;background:#ff5e62;margin:auto;position:relative;top:45vh;animation:hbp 1s infinite}@keyframes hbp{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.3)}}
+</style>
+</head>
+<body>
+<div class=""hb""></div>
+
+</body>
+</html>",pending
+171,Orbit Planets - Sunset,Animated orbit planets animation revolving smoothly with CSS 3D transforms (Sunset color scheme).,#orbit #planet #space #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Orbit Planets - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.orb{width:200px;height:200px;border:1px solid #ffce54;border-radius:50%;margin:auto;position:relative;top:30vh;animation:ob 4s linear infinite}.orb .p{width:16px;height:16px;background:#ff5e62;border-radius:50%;position:absolute;top:-8px;left:92px}@keyframes ob{100%{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class=""orb""><div class=""p""></div></div>
+
+</body>
+</html>",pending
+181,Liquid Wave - Sunset,Smooth flowing liquid wave animation created with pure CSS repeating gradients (Sunset color scheme).,#liquid #wave #flow #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Liquid Wave - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.lw{width:100%;height:100px;position:relative;top:40vh;background:repeating-linear-gradient(90deg,#ff5e62,#ff9966 20px);animation:lwm 3s linear infinite}@keyframes lwm{100%{background-position:100px 0}}
+</style>
+</head>
+<body>
+<div class=""lw""></div>
+
+</body>
+</html>",pending
+191,Confetti Fall - Sunset,Animated confetti fall simulating a festive celebration with HTML5 Canvas (Sunset color scheme).,#confetti #celebration #party #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Confetti Fall - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id=""cf""></canvas>
+<script>let c=document.getElementById('cf'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;let co=[...Array(80)].map(()=>({x:Math.random()*c.width,y:Math.random()*c.height,c:`hsl(${Math.random()*360},80%,60%)`,r:Math.random()*4+2}));function cd(){x.clearRect(0,0,c.width,c.height);co.forEach(p=>{p.y+=2;if(p.y>c.height)p.y=0;x.fillStyle=p.c;x.fillRect(p.x,p.y,p.r,p.r)});requestAnimationFrame(cd)}cd()</script>
+</body>
+</html>",pending
+201,Breathing Circle - Sunset,Calm breathing circle animation simulating meditation rhythm with CSS keyframe animations (Sunset color scheme).,#breathing #meditation #calm #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Breathing Circle - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.br{width:120px;height:120px;border-radius:50%;background:#ff5e62;margin:auto;position:relative;top:35vh;animation:brp 4s ease-in-out infinite}@keyframes brp{0%,100%{transform:scale(.8);opacity:.6}50%{transform:scale(1.2);opacity:1}}
+</style>
+</head>
+<body>
+<div class=""br""></div>
+
+</body>
+</html>",pending
+211,Spiral Galaxy - Sunset,Mesmerizing spiral galaxy animation rotating smoothly with CSS keyframe animations (Sunset color scheme).,#galaxy #spiral #space #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Spiral Galaxy - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.sg{width:200px;height:200px;background:conic-gradient(from 0deg,#ff5e62,#ff9966,#ff5e62);border-radius:50%;margin:auto;position:relative;top:30vh;filter:blur(2px);animation:sgs 6s linear infinite}@keyframes sgs{100%{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class=""sg""></div>
+
+</body>
+</html>",pending
+221,Glitch Text - Sunset,Dynamic glitch text distortion animation created with CSS keyframe animations (Sunset color scheme).,#glitch #digital #distortion #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Glitch Text - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.gl{font-size:40px;color:#fff;text-align:center;position:relative;top:45vh;animation:gt .3s infinite}@keyframes gt{0%{text-shadow:2px 0 #ff5e62,-2px 0 #ff9966}50%{text-shadow:-2px 0 #ff5e62,2px 0 #ff9966}100%{text-shadow:2px 0 #ff5e62,-2px 0 #ff9966}}
+</style>
+</head>
+<body>
+<div class=""gl"">GLITCH</div>
+
+</body>
+</html>",pending
+231,Wave Lines - Sunset,Smooth flowing wave lines animation created with SVG path transitions (Sunset color scheme).,#wave #svg #line #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Wave Lines - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+svg{display:block;margin-top:40vh}#wp{animation:wv 2s ease-in-out infinite}@keyframes wv{0%,100%{d:path('M0 50 Q125 0 250 50 T500 50')}50%{d:path('M0 50 Q125 100 250 50 T500 50')}}
+</style>
+</head>
+<body>
+<svg viewBox=""0 0 500 100""><path id=""wp"" d=""M0 50 Q 125 0 250 50 T 500 50"" fill=""none"" stroke=""#ff5e62"" stroke-width=""4""/></svg>
+
+</body>
+</html>",pending
+241,Firefly Glow - Sunset,Magical glowing firefly animation with dynamic drifting movement using CSS keyframe animations (Sunset color scheme).,#firefly #glow #night #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Firefly Glow - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.ff{width:8px;height:8px;border-radius:50%;background:#ff5e62;box-shadow:0 0 10px #ff5e62;position:absolute;top:50vh;left:20vw;animation:ffm 6s infinite}@keyframes ffm{0%{transform:translate(0,0);opacity:.3}25%{transform:translate(100px,-50px);opacity:1}50%{transform:translate(200px,30px);opacity:.4}75%{transform:translate(80px,80px);opacity:1}100%{transform:translate(0,0);opacity:.3}}
+</style>
+</head>
+<body>
+<div class=""ff""></div>
+
+</body>
+</html>",pending
+251,Radar Sweep - Sunset,Continuous radar sweep scanning animation created with pure CSS conic-gradients (Sunset color scheme).,#radar #scan #tech #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Radar Sweep - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.rd{width:150px;height:150px;border-radius:50%;background:conic-gradient(from 0deg,#ff5e62,transparent 40%);margin:auto;position:relative;top:30vh;animation:rds 2s linear infinite}@keyframes rds{100%{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class=""rd""></div>
+
+</body>
+</html>",pending
+261,Color Shift BG - Sunset,Smooth color shifting background animation changing dynamically with CSS keyframe transitions (Sunset color scheme).,#colorshift #background #mood #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Color Shift BG - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.cs{width:100%;height:100vh;animation:csa 10s infinite}@keyframes csa{0%{background:#ff5e62}33%{background:#ff9966}66%{background:#ffce54}100%{background:#ff5e62}}
+</style>
+</head>
+<body>
+<div class=""cs""></div>
+
+</body>
+</html>",pending
+271,DNA Helix - Sunset,Continuous moving DNA helix animation created with CSS keyframe animations (Sunset color scheme).,#dna #helix #science #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>DNA Helix - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.dna{width:100px;height:200px;margin:auto;position:relative;top:20vh;background:repeating-linear-gradient(45deg,#ff5e62 0 10px,#ff9966 10px 20px);animation:dh 3s linear infinite}@keyframes dh{100%{background-position:0 200px}}
+</style>
+</head>
+<body>
+<div class=""dna""></div>
+
+</body>
+</html>",pending
+281,Pendulum Swing - Sunset,Rhythmic pendulum swing animation with realistic physics using CSS keyframe animations (Sunset color scheme).,#pendulum #swing #physics #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Pendulum Swing - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.pd{width:2px;height:150px;background:#999;margin:0 auto;position:relative;top:10vh;transform-origin:top center;animation:pdw 2s ease-in-out infinite}.ball2{width:30px;height:30px;background:#ff5e62;border-radius:50%;position:absolute;bottom:-15px;left:-14px}@keyframes pdw{0%,100%{transform:rotate(30deg)}50%{transform:rotate(-30deg)}}
+</style>
+</head>
+<body>
+<div class=""pd""><div class=""ball2""></div></div>
+
+</body>
+</html>",pending
+291,Grid Pulse - Sunset,Pulsing grid pattern background animation created with CSS keyframe animations (Sunset color scheme).,#grid #pattern #tech #sunset,"<!DOCTYPE html>
+<html lang=""id"">
+<head>
+<meta charset=""UTF-8"">
+<title>Grid Pulse - Sunset</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b0b0f;}
+.gp{width:200px;height:200px;margin:auto;position:relative;top:30vh;background-image:linear-gradient(#ff5e62 1px,transparent 1px),linear-gradient(90deg,#ff5e62 1px,transparent 1px);background-size:20px 20px;animation:gpp 3s infinite}@keyframes gpp{0%,100%{opacity:.3}50%{opacity:1}}
+</style>
+</head>
+<body>
+<div class=""gp""></div>
+
+</body>
+</html>",pending
