@@ -50,20 +50,16 @@ app.post('/api/generate-timelapse', upload.single('htmlFile'), (req, res) => {
     }
 
     const inputHtmlPath = req.file.path;
-    const { orientation, speed, noTypingSound, typingSoundVolume } = req.body;
+    const { orientation, speed, previewSeconds, noTypingSound, typingSoundVolume } = req.body;
 
     let command = `node cli.js --file "${inputHtmlPath}"`;
-
-    if (orientation && orientation !== 'both') {
-        command += ` --orientation ${orientation}`;
-    }
-    if (speed) {
-        command += ` --speed ${speed}`;
-    }
+    if (orientation && orientation !== 'both') command += ` --orientation ${orientation}`;
+    if (speed) command += ` --speed ${speed}`;
+    if (previewSeconds) command += ` --preview-seconds ${previewSeconds}`;
     if (noTypingSound === 'true') {
-        command += ` --no-typing-sound`;
+      command += ` --no-typing-sound`;
     } else if (typingSoundVolume) {
-        command += ` --typing-sound-volume ${typingSoundVolume}`;
+      command += ` --typing-sound-volume ${typingSoundVolume}`;
     }
 
     console.log(`\n[INFO] Menjalankan perintah:`);
@@ -124,6 +120,7 @@ app.post('/api/spreadsheet/generate', async (req, res) => {
       no,
       orientation = 'vertical',
       speed = 4,
+      previewSeconds = 3,
       typingSound = true,
       typingSoundVolume = 0.5,
     } = req.body;
@@ -146,6 +143,7 @@ app.post('/api/spreadsheet/generate', async (req, res) => {
       outDir: rowOutDir,
       baseName: `timelapse-${no}`,
       speed: Number(speed),
+      previewSeconds: Number(previewSeconds),
       typingSound: typingSound !== false,
       typingSoundVolume: Number(typingSoundVolume),
     });

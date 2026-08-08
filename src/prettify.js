@@ -13,12 +13,13 @@ function prettifyCode(code) {
     indent_size: 2,
     indent_char: " ",
     wrap_line_length: 0,
-    preserve_newlines: true,
-    max_preserve_newlines: 1,
+    preserve_newlines: false,
+    max_preserve_newlines: 0,
     indent_inner_html: true,
     css: { indent_size: 2 },
     js: { indent_size: 2 },
   });
 }
+
 
 module.exports = { prettifyCode };

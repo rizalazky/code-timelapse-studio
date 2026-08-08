@@ -90,6 +90,10 @@
   .tok-attr { color: #9cdcfe; }
   .tok-str { color: #ce9178; }
   .tok-comment { color: #6a9955; }
+  .tok-keyword { color: #c586c0; }
+  .tok-prop    { color: #9cdcfe; }
+  .tok-num     { color: #b5cea8; }
+  .tok-func    { color: #dcdcaa; }
 
   #preview-wrap {
     flex: 1 1 auto;
@@ -154,19 +158,80 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // Cosmetic-only syntax coloring. Not a real parser, just enough to look alive.
-  function highlight(s) {
-    let out = escapeHtml(s);
-    out = out.replace(/(&lt;!--[\s\S]*?--&gt;|\/\/[^\n]*)/g, '<span class="tok-comment">$1</span>');
-    out = out.replace(/(&lt;\/?[a-zA-Z0-9]+)/g, '<span class="tok-tag">$1</span>');
-    out = out.replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;)/g, '<span class="tok-str">$1</span>');
+  // ---- Single-pass tokenizers (one per language) ----
+  // Each walks the RAW source once and builds escaped+highlighted HTML
+  // directly, instead of chaining regex .replace() calls on top of
+  // already-highlighted output (which risks re-matching text sitting
+  // inside a previously injected <span class="..."> tag).
+
+  function htmlHighlight(s) {
+    const re = new RegExp(
+      '(<!--[\\s\\S]*?--' + '>)' +                       // comment
+      '|(<!DOCTYPE[^>]*>)' +                              // doctype
+      '|(<\\/?[a-zA-Z][\\w-]*)' +                         // open/close tag start
+      '|([a-zA-Z_:][\\w:-]*)(=)' +                        // attr=
+      '("(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\')' + // attr value
+      '|(\\/?>)',                                          // tag end
+      'gi'
+    );
+    let out = '', last = 0, m;
+    while ((m = re.exec(s))) {
+      out += escapeHtml(s.slice(last, m.index));
+      if (m[1]) out += '<span class="tok-comment">' + escapeHtml(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="tok-tag">' + escapeHtml(m[2]) + '</span>';
+      else if (m[3]) out += '<span class="tok-tag">' + escapeHtml(m[3]) + '</span>';
+      else if (m[4] !== undefined) {
+        out += '<span class="tok-attr">' + escapeHtml(m[4]) + '</span>=' +
+              '<span class="tok-str">' + escapeHtml(m[6]) + '</span>';
+      } else if (m[7]) {
+        out += escapeHtml(m[7]);
+      }
+      last = re.lastIndex;
+    }
+    out += escapeHtml(s.slice(last));
     return out;
   }
 
-  /**
-   * Locates the inner-content character range [start, end) of the first
-   * <tagName>...</tagName> block in `code`. Returns null if absent.
-   */
+  function cssHighlight(s) {
+    const re = /(\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(@[a-zA-Z-]+)|(#[0-9a-fA-F]{3,8}\b)|(-?\d+\.?\d*(?:px|em|rem|%|vh|vw|vmin|vmax|s|ms|deg|fr)?)|([a-zA-Z-]+)(?=\s*:)/g;
+    let out = '', last = 0, m;
+    while ((m = re.exec(s))) {
+      out += escapeHtml(s.slice(last, m.index));
+      if (m[1]) out += '<span class="tok-comment">' + escapeHtml(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="tok-str">' + escapeHtml(m[2]) + '</span>';
+      else if (m[3]) out += '<span class="tok-keyword">' + escapeHtml(m[3]) + '</span>';
+      else if (m[4]) out += '<span class="tok-num">' + escapeHtml(m[4]) + '</span>';
+      else if (m[5]) out += '<span class="tok-num">' + escapeHtml(m[5]) + '</span>';
+      else if (m[6]) out += '<span class="tok-prop">' + escapeHtml(m[6]) + '</span>';
+      last = re.lastIndex;
+    }
+    out += escapeHtml(s.slice(last));
+    return out;
+  }
+
+  function jsHighlight(s) {
+    const re = /(\/\/[^\n]*)|(\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|class|extends|new|this|typeof|instanceof|in|of|try|catch|finally|throw|async|await|yield|import|export|default|null|undefined|true|false|void|delete|static|get|set)\b|\b(\d+\.?\d*)\b|([a-zA-Z_$][\w$]*)(?=\s*\()/g;
+    let out = '', last = 0, m;
+    while ((m = re.exec(s))) {
+      out += escapeHtml(s.slice(last, m.index));
+      if (m[1]) out += '<span class="tok-comment">' + escapeHtml(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="tok-comment">' + escapeHtml(m[2]) + '</span>';
+      else if (m[3]) out += '<span class="tok-str">' + escapeHtml(m[3]) + '</span>';
+      else if (m[4]) out += '<span class="tok-keyword">' + escapeHtml(m[4]) + '</span>';
+      else if (m[5]) out += '<span class="tok-num">' + escapeHtml(m[5]) + '</span>';
+      else if (m[6]) out += '<span class="tok-func">' + escapeHtml(m[6]) + '</span>';
+      last = re.lastIndex;
+    }
+    out += escapeHtml(s.slice(last));
+    return out;
+  }
+
+  function highlightForType(type, text) {
+    if (type === 'style') return cssHighlight(text);
+    if (type === 'script') return jsHighlight(text);
+    return htmlHighlight(text);
+  }
+
   function findBlock(code, tagName) {
     const openRe = new RegExp('<' + tagName + '(\\s[^>]*)?>', 'i');
     const openMatch = openRe.exec(code);
@@ -177,20 +242,12 @@
     return { start, end };
   }
 
-  /**
-   * Splits `code` into:
-   *  - skeleton: the document with <style>/<script> INNER TEXT physically
-   *    removed (so e.g. "<style></style>" sit right next to each other —
-   *    no reserved blank space for content that hasn't been typed yet)
-   *  - blocks: [{ text, insertPoint }] sorted by where they belong in the
-   *    skeleton, so they can be spliced back in progressively later
-   */
   function splitDoc(code) {
     const styleBlock = findBlock(code, 'style');
     const scriptBlock = findBlock(code, 'script');
     const raw = [];
-    if (styleBlock) raw.push(styleBlock);
-    if (scriptBlock) raw.push(scriptBlock);
+    if (styleBlock) raw.push({ ...styleBlock, type: 'style' });
+    if (scriptBlock) raw.push({ ...scriptBlock, type: 'script' });
     raw.sort((a, b) => a.start - b.start);
 
     let skeleton = '';
@@ -198,36 +255,25 @@
     const blocks = [];
     for (const b of raw) {
       skeleton += code.slice(cursor, b.start);
-      blocks.push(analyzeBlock({ text: code.slice(b.start, b.end), insertPoint: skeleton.length }));
+      blocks.push(analyzeBlock({ text: code.slice(b.start, b.end), insertPoint: skeleton.length, type: b.type }));
       cursor = b.end;
     }
     skeleton += code.slice(cursor);
     return { skeleton, blocks };
   }
 
-  /**
- * Analyzes a block's trailing whitespace (the indentation that sits right
- * before its closing tag in the original code) so we can preview it early
- * during typing instead of showing the closing tag jammed up against the
- * last-typed character.
- */
   function analyzeBlock(block) {
     const trailingMatch = block.text.match(/\n[ \t]*$/);
     const trailingWhitespace = trailingMatch ? trailingMatch[0] : '';
     return {
       ...block,
       contentEnd: block.text.length - trailingWhitespace.length,
-      indent: trailingWhitespace.slice(1), // strip leading \n, keep just the spaces/tabs
+      indent: trailingWhitespace.slice(1),
     };
   }
 
-  /** Reassembles skeleton + partially-revealed block text at their insert points.
-   *  `activeIndex` = index of the block currently being typed. While that
-   *  block's real content hasn't reached its own trailing indentation yet,
-   *  we preview a newline + matching indent before continuing into the
-   *  skeleton — so the closing tag lands where it will in the final code,
-   *  instead of sitting right behind the cursor.
-   */
+  // Plain-text reassembly — used for the iframe preview (srcdoc must stay
+  // unescaped, real code).
   function assemble(skeleton, blocks, revealedLens, activeIndex) {
     let result = '';
     let cursor = 0;
@@ -235,71 +281,81 @@
       result += skeleton.slice(cursor, blocks[i].insertPoint);
       const revealedText = blocks[i].text.slice(0, revealedLens[i]);
       result += revealedText;
-
       const stillTypingContent =
         i === activeIndex && revealedLens[i] <= blocks[i].contentEnd && revealedLens[i] < blocks[i].text.length;
-      if (stillTypingContent) {
-        result += '\n' + blocks[i].indent;
-      }
-
+      if (stillTypingContent) result += '\n' + blocks[i].indent;
       cursor = blocks[i].insertPoint;
     }
     result += skeleton.slice(cursor);
     return result;
   }
 
-  /**
-   * Types `code` in HTML -> CSS -> JS order. Nothing is ever pre-reserved:
-   * the CSS/JS text simply doesn't exist in the displayed string until its
-   * own phase starts, so no empty gaps appear while earlier phases type.
-   */
+  // Same reassembly but each segment is run through the highlighter that
+  // matches its language (HTML skeleton vs. CSS/JS block content), then
+  // concatenated — so the code panel gets real per-language coloring
+  // instead of one highlighter guessing across the whole mixed string.
+  function assembleHighlighted(skeleton, blocks, revealedLens, activeIndex) {
+    let result = '';
+    let cursor = 0;
+    for (let i = 0; i < blocks.length; i++) {
+      result += htmlHighlight(skeleton.slice(cursor, blocks[i].insertPoint));
+      const revealedText = blocks[i].text.slice(0, revealedLens[i]);
+      result += highlightForType(blocks[i].type, revealedText);
+      const stillTypingContent =
+        i === activeIndex && revealedLens[i] <= blocks[i].contentEnd && revealedLens[i] < blocks[i].text.length;
+      if (stillTypingContent) result += '\n' + blocks[i].indent;
+      cursor = blocks[i].insertPoint;
+    }
+    result += htmlHighlight(skeleton.slice(cursor));
+    return result;
+  }
+
   window.typeCode = async function typeCode(code, opts) {
     opts = opts || {};
     const charsPerTick = opts.charsPerTick || 3;
     const delayMs = opts.delayMs != null ? opts.delayMs : 12;
-    const holdMs = opts.holdMs != null ? opts.holdMs : 1500;
+    const holdMs = opts.holdMs != null ? opts.holdMs : 3000; // finished-preview hold, ms
     const previewEveryTicks = opts.previewEveryTicks || 1;
-    
 
     const { skeleton, blocks } = splitDoc(code);
-
     let previewTickCounter = 0;
 
-    async function render(text, isFinalStep) {
-      codeTextEl.innerHTML = highlight(text);
+    async function render(displayHtml, previewText, isFinalStep) {
+      codeTextEl.innerHTML = displayHtml;
       codeWrap.scrollTop = codeWrap.scrollHeight;
       previewTickCounter++;
       if (previewTickCounter % previewEveryTicks === 0 || isFinalStep) {
-        iframe.srcdoc = text;
+        iframe.srcdoc = previewText;
       }
     }
 
-    async function typePhase(totalLen, buildText) {
+    async function typePhase(totalLen, buildDisplay, buildPreview) {
       let revealed = 0;
       while (revealed < totalLen) {
         revealed = Math.min(totalLen, revealed + charsPerTick);
-        // Notify the Node/Playwright side of this keystroke tick so it can
-        // sync a mechanical-keyboard click sound to it during post-processing.
-        // (Playwright's video recorder captures video only, no audio, so
-        // timing has to be reported out and mixed in afterward.)
         if (window.__onTypeTick) {
           try { window.__onTypeTick(); } catch (e) { /* ignore */ }
         }
-        await render(buildText(revealed), false);
+        await render(buildDisplay(revealed), buildPreview(revealed), false);
         await new Promise((r) => setTimeout(r, delayMs));
       }
     }
 
-    // Phase 1: HTML skeleton (structure only — style/script are still empty tags)
-    await typePhase(skeleton.length, (n) => skeleton.slice(0, n));
+    // Phase 1: HTML skeleton
+    await typePhase(
+      skeleton.length,
+      (n) => htmlHighlight(skeleton.slice(0, n)),
+      (n) => skeleton.slice(0, n)
+    );
 
-    // Phase 2+: each block (CSS, then JS, in document order) fills into its slot
+    // Phase 2+: each block (CSS, then JS) fills into its slot
     const revealedLens = blocks.map(() => 0);
     for (let i = 0; i < blocks.length; i++) {
-      await typePhase(blocks[i].text.length, (n) => {
-        revealedLens[i] = n;
-        return assemble(skeleton, blocks, revealedLens, i); // <-- tambahkan `i` di sini
-      });
+      await typePhase(
+        blocks[i].text.length,
+        (n) => { revealedLens[i] = n; return assembleHighlighted(skeleton, blocks, revealedLens, i); },
+        (n) => { revealedLens[i] = n; return assemble(skeleton, blocks, revealedLens, i); }
+      );
     }
 
     // black fade -> reveal final result -> slow zoom-in during the hold
@@ -309,7 +365,7 @@
     overlay.classList.add('active');
     await new Promise((r) => setTimeout(r, 300));
 
-    await render(code, true);
+    await render(assembleHighlighted(skeleton, blocks, revealedLens, -1), code, true);
 
     previewEl.style.transition = `transform ${holdMs}ms linear`;
     previewEl.style.transform = 'scale(1.08)';

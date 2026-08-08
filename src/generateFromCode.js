@@ -20,13 +20,15 @@ async function generateFromCode({
   speed = 4,
   charsPerTick = 3,
   delayMs = 12,
-  holdMs = 1500,
+  previewSeconds = 3,   // NEW — preferred way to set the finished-preview hold
+  holdMs,
   minSecondsVertical = 15,
   minSecondsHorizontal = 0,
   typingSound = true,
   typingSoundVolume = 0.5,
   prettify = true, // re-indent minified/single-line source before typing it
 }) {
+  if (holdMs == null) holdMs = previewSeconds * 1000;
   if (!code || !code.trim()) {
     throw new Error("HTML code is empty — nothing to record");
   }
@@ -75,6 +77,7 @@ async function generateFromCode({
       ticks,
       typingSound,
       typingSoundVolume,
+      holdMs, // NEW
     });
     results[o] = finalPath;
   }

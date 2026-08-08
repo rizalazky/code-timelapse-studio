@@ -7,15 +7,13 @@ const { makeTimelapse } = require("./src/postprocess");
 function parseArgs(argv) {
   const out = {
     file: null,
-    orientation: "both", // vertical | horizontal | both
+    orientation: "both",
     speed: 2,
     charsPerTick: 3,
     delayMs: 12,
-    holdMs: 3000,
+    previewSeconds: 3,  // NEW: how long the finished preview holds before the clip ends
+    holdMs: null,        // optional override in ms; if unset, derived from previewSeconds
     outDir: path.join(__dirname, "output"),
-    // Vertical clips get a duration floor by default (short snippets were
-    // ending up as ~2s clips). Horizontal stays at normal typing pace —
-    // pass --min-seconds-horizontal to enforce a floor there too.
     minSecondsVertical: 15,
     minSecondsHorizontal: 15,
     typingSound: true,
@@ -29,13 +27,15 @@ function parseArgs(argv) {
     else if (a === "--speed") out.speed = Number(next());
     else if (a === "--chars-per-tick") out.charsPerTick = Number(next());
     else if (a === "--delay-ms") out.delayMs = Number(next());
-    else if (a === "--hold-ms") out.holdMs = Number(next());
+    else if (a === "--preview-seconds") out.previewSeconds = Number(next());
+    else if (a === "--hold-ms") out.holdMs = Number(next()); // kept for backward compat
     else if (a === "--out-dir") out.outDir = next();
     else if (a === "--min-seconds-vertical") out.minSecondsVertical = Number(next());
     else if (a === "--min-seconds-horizontal") out.minSecondsHorizontal = Number(next());
     else if (a === "--no-typing-sound") out.typingSound = false;
     else if (a === "--typing-sound-volume") out.typingSoundVolume = Number(next());
   }
+  if (out.holdMs == null) out.holdMs = out.previewSeconds * 1000;
   return out;
 }
 
@@ -57,7 +57,7 @@ async function main() {
 
   if (!opts.file) {
     console.error(
-      "Usage: node cli.js --file yourcode.html [--orientation vertical|horizontal|both] [--speed 4] [--no-typing-sound] [--typing-sound-volume 0.5]"
+      "Usage: node cli.js --file yourcode.html [--orientation vertical|horizontal|both] [--speed 4] [--preview-seconds 3] [--no-typing-sound] [--typing-sound-volume 0.5]"
     );
     process.exit(1);
   }
@@ -112,6 +112,7 @@ async function main() {
       ticks,
       typingSound: opts.typingSound,
       typingSoundVolume: opts.typingSoundVolume,
+      holdMs: opts.holdMs, // NEW
     });
     console.log(`✅ Done: ${finalPath}`);
   }

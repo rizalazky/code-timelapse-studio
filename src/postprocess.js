@@ -48,15 +48,41 @@ function makeTimelapse({
   ticks = [],
   typingSound = true,
   typingSoundVolume = 0.5,
+  holdMs = 3000, // raw-timeline duration of the finished-code pause (see FADE_WAIT_MS below)
 }) {
+  // Matches studio.html: 300ms black-fade wait happens right before the
+  // holdMs zoom/reveal window starts, and both are recorded on the RAW
+  // timeline. Together they're the "tail" we must NOT speed up.
+  const FADE_WAIT_MS = 300;
+
   const size = FINAL_SIZE[orientation] || FINAL_SIZE.horizontal;
-  const videoFilter = `setpts=PTS/${speed},scale=${size.width}:${size.height}:flags=lanczos`;
+  const rawDurationSeconds = getDurationSeconds(rawPath);
+
+  const tailRawMs = holdMs + FADE_WAIT_MS;
+  const tailRawSeconds = Math.min(rawDurationSeconds, tailRawMs / 1000);
+  const splitAtSeconds = Math.max(0, rawDurationSeconds - tailRawSeconds);
+
+  const mainFinalMs = (splitAtSeconds * 1000) / speed;
+  const tailFinalMs = tailRawSeconds * 1000; // NOT divided by speed — this is the fix
+
+  // Two segments, concatenated: the typing portion gets the timelapse
+  // speed-up; the finished-result pause is kept at real speed so it's
+  // actually visible on screen instead of being crushed by the same
+  // multiplier as the typing (previously: the whole raw clip, hold
+  // included, was sped up together — a `--speed 4` hold of 3s became a
+  // barely-visible 0.75s).
+  const videoFilter =
+    `[0:v]trim=start=0:end=${splitAtSeconds},setpts=(PTS-STARTPTS)/${speed}[vmain];` +
+    `[0:v]trim=start=${splitAtSeconds},setpts=PTS-STARTPTS[vtail];` +
+    `[vmain][vtail]concat=n=2:v=1:a=0[vcat];` +
+    `[vcat]scale=${size.width}:${size.height}:flags=lanczos[vout]`;
 
   if (!typingSound || ticks.length === 0) {
     const args = [
       "-y",
       "-i", rawPath,
-      "-filter:v", videoFilter,
+      "-filter_complex", videoFilter,
+      "-map", "[vout]",
       "-r", "30",
       "-pix_fmt", "yuv420p",
       "-an",
@@ -69,9 +95,14 @@ function makeTimelapse({
     return outPath;
   }
 
-  const rawDurationSeconds = getDurationSeconds(rawPath);
-  const finalDurationMs = (rawDurationSeconds * 1000) / speed;
-  const finalTickTimestampsMs = ticks.map((t) => t / speed);
+  // Ticks before the split get scaled by `speed` like before; any tick
+  // that happens to land in the tail (shouldn't normally happen, typing
+  // is done by then) maps 1:1 past the sped-up main segment's final length.
+  const splitRawMs = splitAtSeconds * 1000;
+  const finalTickTimestampsMs = ticks.map((t) =>
+    t <= splitRawMs ? t / speed : mainFinalMs + (t - splitRawMs)
+  );
+  const finalDurationMs = mainFinalMs + tailFinalMs;
 
   const clickTrack = buildTypingSoundTrack({
     durationMs: finalDurationMs,
@@ -85,8 +116,8 @@ function makeTimelapse({
     "-y",
     "-i", rawPath,
     "-i", clicksPath,
-    "-filter:v", videoFilter,
-    "-map", "0:v",
+    "-filter_complex", videoFilter,
+    "-map", "[vout]",
     "-map", "1:a",
     "-r", "30",
     "-pix_fmt", "yuv420p",
